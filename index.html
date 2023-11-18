@@ -8,7 +8,46 @@
 </head>
 <body>
   <div style="border:1px solid #000000; width: 100px; height: 100px;">
-    
+    <div>
+    </div>
   </div>
 </body>
 </html>
+
+<script>
+  var fumen_data_format={"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7, "I": 8, "J": 9, "K":10, "L":11, "M":12, "N":13, "O":14, "P":15, "Q":16, "R":17, "S":18, "T":19, "U":20, "V":21,
+     "W":22, "X":23, "Y":24, "Z":25, "a":26, "b":27, "c":28, "d":29, "e":30, "f":31, "g":32, "h":33, "i":34, "j":35, "k":36, "l":37, "m":38, "n":39, "o":40, "p":41, "q":42, "r":43,
+     "s":44, "t":45, "u":46, "v":47, "w":48, "x":49, "y":50, "z":51, "0":52, "1":53, "2":54, "3":55, "4":56, "5":57, "6":58, "7":59, "8":60, "9":61, "+":62, "/":63}
+
+  var fumens=[["v115@dhwhglQpAtwwg0Q4A8JeAgHch3hAAJeAgH",1]];
+
+  fumens.forEach(function(fumen)
+                 {
+                   var minos=new Array();
+                   var block_nums=new Array();
+                   page_codes=fumen[0].substr(5).split("AgH");
+                   page_codes.unshift("vhA")
+                   page_codes.forEach(function(page_code)
+                                      {
+                                        var even_char_num=0;
+                                        
+                                        for(char_index=0;char_index<page_code.length;char_index++)
+                                          {
+                                            if (char_index %2 ===0)
+                                            {
+                                              even_char_num=fumen_data_format[page_code.charAt(char_index)];
+                                            }
+                                            else
+                                            {
+                                              poll=even_char_num+fumen_data_format[page_code.charAt(char_index)]*64;
+                                              minos.push(Math.floor(poll/240));
+                                              block_nums.push(poll%240);
+                                            }
+                                          }
+                                      });
+                   console.log(minos);
+                   console.log(block_nums);
+                 }
+                );
+  
+</script>
