@@ -6,7 +6,7 @@ const fumen_data_format = {
 }
 
 //譜面、連結番号   
-let fumens = [["v115@7gAtAewhBeQ4CeCtwhBeR4BeCtwhRpg0Q4CeAtglwh?Rpi0AeilJeAgHWhywHewwMeAgHygwhGeRpwhGeRpwhhlh0Q?4ywAewhAeglg0AeR4wwDeglg0BeQ4NeAgHvhAAgH", 1]];
+let fumens = [["v115@7gAtAewhBeQ4CeCtwhBeR4BeCtwhRpg0Q4CeAtglwh?Rpi0AeilJeAgHWhywHewwMeAgHygwhGeRpwhGeRpwhhlh0Q?4ywAewhAeglg0AeR4wwDeglg0BeQ4NeAgHvhAAgH", 1, 2]];
 let fields = new Array();
 
 fumens.forEach(function (fumen) {
@@ -76,11 +76,13 @@ fumens.forEach(function (fumen) {
         }
     }
 });
-render(fields[2]);
+render[0];
 
-function render(fields) {
+
+
+function render(field) {
     field_width = 300;
-    field_height = (field_width / 10) * 24;
+    field_height = (field_width / 10) * 23;
     field_color = 0xdcdcdc
     window.onload = function () {
         const field_graphic = new PIXI.Application({
@@ -90,12 +92,17 @@ function render(fields) {
             resolution: 1,
             autoDensity: true
         });
-        document.getElementById("pixi").appendChild(field_graphic.view);
+        document.getElementById("fumen_display").appendChild(field_graphic.view);
         row_point = 0;
         col_point = 0;
         mino_scale = field_width / 10;
 
-        fields.forEach(function (mino) {
+        for (mino_index = 0; mino_index <= field.length - 1; mino_index++) {
+
+            if (col_point === 0 & row_point === 24 * mino_scale) {
+                break;
+            }
+            mino = field[mino_index];
             const mino_graphic = new PIXI.Graphics();
             let mino_color = 0x000000;
 
@@ -146,7 +153,7 @@ function render(fields) {
                 row_point += mino_scale;
                 col_point = 0;
             }
-        });
+        }
         const grid_graphic = new PIXI.Graphics();
         grid_graphic.lineStyle(1, 0xffffff, .6);
         for (col_grid_start_index = mino_scale; col_grid_start_index <= 9 * mino_scale; col_grid_start_index += mino_scale) {
