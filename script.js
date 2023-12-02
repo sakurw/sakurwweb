@@ -1,15 +1,18 @@
-//トリミング、軽量化
+//トリミング、軽量化、tokenが過剰パターンの処理
 const fumen_data_format = {
     "A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5, "G": 6, "H": 7, "I": 8, "J": 9, "K": 10, "L": 11, "M": 12, "N": 13, "O": 14, "P": 15, "Q": 16, "R": 17, "S": 18, "T": 19, "U": 20, "V": 21,
     "W": 22, "X": 23, "Y": 24, "Z": 25, "a": 26, "b": 27, "c": 28, "d": 29, "e": 30, "f": 31, "g": 32, "h": 33, "i": 34, "j": 35, "k": 36, "l": 37, "m": 38, "n": 39, "o": 40, "p": 41, "q": 42, "r": 43,
     "s": 44, "t": 45, "u": 46, "v": 47, "w": 48, "x": 49, "y": 50, "z": 51, "0": 52, "1": 53, "2": 54, "3": 55, "4": 56, "5": 57, "6": 58, "7": 59, "8": 60, "9": 61, "+": 62, "/": 63
 }
 
-//譜面、連結番号   
-let fumens = [["v115@7gAtAewhBeQ4CeCtwhBeR4BeCtwhRpg0Q4CeAtglwh?Rpi0AeilJeAgHWhywHewwMeAgHygwhGeRpwhGeRpwhhlh0Q?4ywAewhAeglg0AeR4wwDeglg0BeQ4NeAgHvhAAgH", 1, 2]];
+//譜面、連結開始番号   
+let input_fumen = [["v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHegwhGeRpwhGeRpwhhlh0DeAtwhAeglg0DeBtBe?glg0DeAtfeAgHWhywHewwMeAgHvhAAgHLhQ4IeR4IeQ4NeA?gH", 1], ["v115@egwhDeRpCewhDeRpCewhhlh0Q4Dexhglg0S4CeAtwh?glg0S4BeBtwhRpg0Q4CeAtglwhRpi0AeilJeAgHWhywHeww?MeAgHvhAAgHPhAtHeBtHeAtLeAgH", 2]];
+//edge
+let input_edge = [[1, 5], [2], [3], [4], [], [6], [7], [8], []];
 let fields = new Array();
+let page_div_num = new Array();
 
-fumens.forEach(function (fumen) {
+input_fumen.forEach(function (fumen) {
     //field初期化
     let field = new Array();
     for (field_index = 0; field_index <= 239; field_index++) {
@@ -75,102 +78,203 @@ fumens.forEach(function (fumen) {
 
         }
     }
+    //次譜面の開始番号を記録
+    page_div_num.push(fields.length);
 });
-render[0];
 
+//盤面描画
+field_width = 300;
+field_height = (field_width / 10) * 23;
+field_color = 0xdcdcdc;
 
+const field_graphic = new PIXI.Application({
+    width: field_width,
+    height: field_height,
+    backgroundColor: field_color,
+    resolution: 1,
+    autoDensity: true
+});
+document.getElementById("fumen_display").appendChild(field_graphic.view);
 
-function render(field) {
-    field_width = 300;
-    field_height = (field_width / 10) * 23;
-    field_color = 0xdcdcdc
-    window.onload = function () {
-        const field_graphic = new PIXI.Application({
-            width: field_width,
-            height: field_height,
-            backgroundColor: field_color,
-            resolution: 1,
-            autoDensity: true
-        });
-        document.getElementById("fumen_display").appendChild(field_graphic.view);
-        row_point = 0;
-        col_point = 0;
-        mino_scale = field_width / 10;
+render(0);
+let token_position_dict = new Array(fields.length - 1);
 
-        for (mino_index = 0; mino_index <= field.length - 1; mino_index++) {
+//ネットグラフのステージ生成
+net_width = 900;
+net_height = 300;
+net_color = 0xdcdcdc;
+const net_graphic = new PIXI.Application({
+    width: net_width,
+    height: net_height,
+    backgroundColor: net_color,
+    resolution: 1,
+    autoDensity: true
+});
 
-            if (col_point === 0 & row_point === 24 * mino_scale) {
-                break;
-            }
-            mino = field[mino_index];
-            const mino_graphic = new PIXI.Graphics();
-            let mino_color = 0x000000;
+document.getElementById("net_display").appendChild(net_graphic.view);
 
-            switch (mino) {
-                case 0:
-                    mino_color = 0xdcdcdc
-                    break;
-                case 1:
-
-                    mino_color = 0x41afde;
-                    break;
-                case 2:
-
-                    mino_color = 0xef9535;
-                    break;
-                case 3:
-
-                    mino_color = 0xf7d33e;
-                    break;
-                case 4:
-
-                    mino_color = 0xef624d;
-                    break;
-                case 5:
-
-                    mino_color = 0xb451ac;
-                    break;
-                case 6:
-
-                    mino_color = 0x1983bf;
-                    break;
-                case 7:
-
-                    mino_color = 0x66c65c;
-                    break;
-                case 8:
-
-                    mino_color = 0x808080;
-                    break;
-            }
-            mino_graphic.beginFill(mino_color);
-            mino_graphic.drawRect(col_point, row_point, mino_scale, mino_scale);
-            mino_graphic.endFill();
-            field_graphic.stage.addChild(mino_graphic);
-
-            col_point += mino_scale;
-            if (col_point >= field_width) {
-                row_point += mino_scale;
-                col_point = 0;
-            }
-        }
-        const grid_graphic = new PIXI.Graphics();
-        grid_graphic.lineStyle(1, 0xffffff, .6);
-        for (col_grid_start_index = mino_scale; col_grid_start_index <= 9 * mino_scale; col_grid_start_index += mino_scale) {
-            grid_graphic.moveTo(col_grid_start_index, 4 * mino_scale);
-            grid_graphic.lineTo(col_grid_start_index, field_height);
-        }
-        for (row_grid_start_index = 4 * mino_scale; row_grid_start_index <= 22 * mino_scale; row_grid_start_index += mino_scale) {
-            grid_graphic.moveTo(0, row_grid_start_index);
-            grid_graphic.lineTo(field_width, row_grid_start_index);
-        }
-        grid_graphic.lineStyle();
-        grid_graphic.lineStyle(3, 0xffffff, .6, 0);
-        grid_graphic.moveTo(0, row_grid_start_index + mino_scale);
-        grid_graphic.lineTo(field_width, row_grid_start_index + mino_scale);
-        grid_graphic.lineStyle();
-        field_graphic.stage.addChild(grid_graphic);
-
-
+//token配置用の配列に変換
+let net_fields_index = new Array;
+for (index_copy_index = 0; index_copy_index <= fields.length - 1; index_copy_index++) {
+    net_fields_index.push(index_copy_index);
+}
+let fumens = new Array();
+let token_x_length = page_div_num[0];
+for (div_num_index = 0; div_num_index <= page_div_num.length - 2; div_num_index++) {
+    if (token_x_length < page_div_num[div_num_index] - page_div_num[div_num_index - 1]) {
+        token_x_length = page_div_num[div_num_index] - page_div_num[div_num_index - 1];
     }
+}
+for (fumens_index = 0; fumens_index <= token_x_length - 1; fumens_index++) {
+    fumens.push([]);
+}
+let div_index = 0;
+for (fumen_index = 0; fumen_index <= net_fields_index.length - 1; fumen_index++) {
+    if (fumen_index === page_div_num[div_index]) {
+        div_index++
+    }
+    if (page_div_num[div_index - 1] === undefined) {
+        fumens[(fumen_index + input_fumen[div_index][1]) - 1].push(net_fields_index[fumen_index]);
+    }
+    else {
+        fumens[((fumen_index % page_div_num[div_index - 1]) + input_fumen[div_index][1]) - 1].push(net_fields_index[fumen_index]);
+    }
+
+}
+
+//token座標のみ取得
+token_x = 30;
+token_space = 100;
+token_color = 0x1e308a;
+
+fumens.forEach(function (stage) {
+    let put_row = 1;
+    stage.forEach(function (fumen_index_num) {
+        token_position_dict[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
+        put_row++;
+    });
+    token_x += token_space;
+});
+
+//edge生成
+const edge_graphics = new PIXI.Graphics();
+edge_graphics.lineStyle(2, 0x111111);
+for (input_edge_index = 0; input_edge_index <= input_edge.length - 1; input_edge_index++) {
+    let from_token_positon = token_position_dict[input_edge_index];
+    input_edge[input_edge_index].forEach(function (to_token) {
+        let to_token_position = token_position_dict[to_token];
+        edge_graphics.moveTo(from_token_positon[0], from_token_positon[1]);
+        edge_graphics.lineTo(to_token_position[0], to_token_position[1]);
+    });
+}
+edge_graphics.lineStyle();
+net_graphic.stage.addChild(edge_graphics);
+
+//token配置
+token_x = 30;
+token_space = 100;
+fumens.forEach(function (stage) {
+    let put_row = 1;
+    stage.forEach(function (fumen_index_num) {
+        const token_graphic = new PIXI.Graphics();
+        token_graphic.lineStyle(1, 0x000000, 1, 1);
+        token_graphic.beginFill(token_color);
+        token_graphic.drawCircle(token_x, (net_height * put_row) / (stage.length + 1), net_height / 15);
+        token_graphic.endFill();
+        token_graphic.lineStyle();
+        token_graphic.interactive = true;
+        token_graphic.buttonMode = true;
+        net_graphic.stage.addChild(token_graphic);
+        token_graphic.on("pointerup", () => { render(fumen_index_num) });
+        token_position_dict[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
+        put_row++;
+    });
+    token_x += token_space;
+});
+
+//譜面描画関数
+function render(field_index) {
+    console.log(field_index);
+    field = fields[field_index]
+
+    //テト譜描画
+    row_point = 0;
+    col_point = 0;
+    mino_scale = field_width / 10;
+    const mino_graphic = new PIXI.Graphics();
+    let mino_color = 0x000000;
+    for (mino_index = 0; mino_index <= field.length - 1; mino_index++) {
+
+        if (col_point === 0 & row_point === 24 * mino_scale) {
+            break;
+        }
+        mino = field[mino_index];
+
+        switch (mino) {
+            case 0:
+                mino_color = 0xdcdcdc
+                break;
+            case 1:
+
+                mino_color = 0x41afde;
+                break;
+            case 2:
+
+                mino_color = 0xef9535;
+                break;
+            case 3:
+
+                mino_color = 0xf7d33e;
+                break;
+            case 4:
+
+                mino_color = 0xef624d;
+                break;
+            case 5:
+
+                mino_color = 0xb451ac;
+                break;
+            case 6:
+
+                mino_color = 0x1983bf;
+                break;
+            case 7:
+
+                mino_color = 0x66c65c;
+                break;
+            case 8:
+
+                mino_color = 0x808080;
+                break;
+        }
+        mino_graphic.beginFill(mino_color);
+        mino_graphic.drawRect(col_point, row_point, mino_scale, mino_scale);
+        col_point += mino_scale;
+        if (col_point >= field_width) {
+            row_point += mino_scale;
+            col_point = 0;
+        }
+    }
+    mino_graphic.endFill();
+    field_graphic.stage.addChild(mino_graphic);
+
+    //grid描画
+    const grid_graphic = new PIXI.Graphics();
+    grid_graphic.lineStyle(1, 0xffffff, .6);
+    for (col_grid_start_index = mino_scale; col_grid_start_index <= 9 * mino_scale; col_grid_start_index += mino_scale) {
+        grid_graphic.moveTo(col_grid_start_index, 4 * mino_scale);
+        grid_graphic.lineTo(col_grid_start_index, field_height);
+    }
+    for (row_grid_start_index = 4 * mino_scale; row_grid_start_index <= 22 * mino_scale; row_grid_start_index += mino_scale) {
+        grid_graphic.moveTo(0, row_grid_start_index);
+        grid_graphic.lineTo(field_width, row_grid_start_index);
+    }
+    grid_graphic.lineStyle();
+    grid_graphic.lineStyle(3, 0xffffff, .6, 0);
+    grid_graphic.moveTo(0, row_grid_start_index + mino_scale);
+    grid_graphic.lineTo(field_width, row_grid_start_index + mino_scale);
+    grid_graphic.lineStyle();
+    field_graphic.stage.addChild(grid_graphic);
+
+
 }
