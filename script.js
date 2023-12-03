@@ -96,8 +96,7 @@ const field_graphic = new PIXI.Application({
 });
 document.getElementById("fumen_display").appendChild(field_graphic.view);
 
-render(0);
-let token_position_dict = new Array(fields.length - 1);
+let token_positions = new Array(fields.length - 1);
 
 //ネットグラフのステージ生成
 net_width = 900;
@@ -150,7 +149,7 @@ token_color = 0x1e308a;
 fumens.forEach(function (stage) {
     let put_row = 1;
     stage.forEach(function (fumen_index_num) {
-        token_position_dict[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
+        token_positions[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
         put_row++;
     });
     token_x += token_space;
@@ -160,9 +159,9 @@ fumens.forEach(function (stage) {
 const edge_graphics = new PIXI.Graphics();
 edge_graphics.lineStyle(2, 0x111111);
 for (input_edge_index = 0; input_edge_index <= input_edge.length - 1; input_edge_index++) {
-    let from_token_positon = token_position_dict[input_edge_index];
+    let from_token_positon = token_positions[input_edge_index];
     input_edge[input_edge_index].forEach(function (to_token) {
-        let to_token_position = token_position_dict[to_token];
+        let to_token_position = token_positions[to_token];
         edge_graphics.moveTo(from_token_positon[0], from_token_positon[1]);
         edge_graphics.lineTo(to_token_position[0], to_token_position[1]);
     });
@@ -185,13 +184,41 @@ fumens.forEach(function (stage) {
         token_graphic.interactive = true;
         token_graphic.buttonMode = true;
         net_graphic.stage.addChild(token_graphic);
-        token_graphic.on("pointerup", () => { render(fumen_index_num) });
-        token_position_dict[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
+        token_graphic.on("pointerup", () => { click_token(fumen_index_num) });
+        token_positions[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
         put_row++;
     });
     token_x += token_space;
 });
+let pre_token_position = token_positions[0];
+click_token(0);
 
+//csv
+const request = new XMLHttpRequest();
+request.addEventListener("load", (event) => {
+    const response = event.target.responseText;
+    document.getElementById("csv").innerHTML = response;
+});
+request.open("GET", "cover.csv", true);
+request.send();
+
+
+//tokenクリック関数
+function click_token(fumen_index_num) {
+    const token_graphic = new PIXI.Graphics();
+    token_graphic.lineStyle(1, 0x000000, 1, 1);
+    token_graphic.beginFill(token_color);
+    token_graphic.drawCircle(pre_token_position[0], pre_token_position[1], net_height / 15);
+    token_graphic.lineStyle();
+    token_graphic.lineStyle(1, 0xFF0000, 1, 1);
+    token_graphic.beginFill(token_color);
+    token_graphic.drawCircle(token_positions[fumen_index_num][0], token_positions[fumen_index_num][1], net_height / 15);
+    token_graphic.endFill();
+    token_graphic.lineStyle();
+    net_graphic.stage.addChild(token_graphic);
+    pre_token_position = token_positions[fumen_index_num];
+    render(fumen_index_num);
+}
 //譜面描画関数
 function render(field_index) {
     console.log(field_index);
