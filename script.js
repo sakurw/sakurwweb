@@ -7,7 +7,6 @@ const fumen_data_format = {
 
 //譜面、連結開始番号   
 let input_fumen = [["v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHegwhGeRpwhGeRpwhhlh0DeAtwhAeglg0DeBtBe?glg0DeAtfeAgHWhywHewwMeAgHvhAAgHLhQ4IeR4IeQ4NeA?gH", 1], ["v115@egwhDeRpCewhDeRpCewhhlh0Q4Dexhglg0S4CeAtwh?glg0S4BeBtwhRpg0Q4CeAtglwhRpi0AeilJeAgHWhywHeww?MeAgHvhAAgHPhAtHeBtHeAtLeAgH", 2]];
-//edge
 let input_edge = [[1, 5], [2], [3], [4], [], [6], [7], [8], []];
 let fields = new Array();
 let page_div_num = new Array();
@@ -194,13 +193,30 @@ let pre_token_position = token_positions[0];
 click_token(0);
 
 //csv
-const request = new XMLHttpRequest();
-request.addEventListener("load", (event) => {
-    const response = event.target.responseText;
-    document.getElementById("csv").innerHTML = response;
-});
-request.open("GET", "cover.csv", true);
-request.send();
+let csv_paths = new Array(fumens.length);
+csv_paths[1] = "cover.csv"
+let csvs = new Array(fumens.length);
+//forでcsvループ→split/nで配列化→更に配列をループし[0]をkey、残りをsliceでvalueに
+for (csv_path_index = 0; csv_path_index <= csv_paths.length - 1; csv_path_index++) {
+    if (csv_paths[csv_path_index] === undefined) {
+        csvs[csv_path_index] = "";
+        continue;
+    }
+    let cover_dict = {};
+    const request = new XMLHttpRequest();
+    request.addEventListener("load", (csv_file) => {
+        csv_rows = csv_file.target.responseText.split("\n");
+        for (csv_cell_index = 0; csv_cell_index <= csv_rows.length - 2; csv_cell_index++) {
+            cover_dict[csv_rows[csv_cell_index].split(",")[0]] = csv_rows[csv_cell_index].split(",").slice(1);
+            delete_r = cover_dict[csv_rows[csv_cell_index].split(",")[0]].pop();
+            cover_dict[csv_rows[csv_cell_index].split(",")[0]].push(delete_r.slice(0, -1));
+        }
+        csvs[csv_path_index] = Object.create(cover_dict);
+    });
+    request.open("GET", csv_paths[csv_path_index], true);
+    request.send();
+}
+
 
 
 //tokenクリック関数
@@ -221,7 +237,6 @@ function click_token(fumen_index_num) {
 }
 //譜面描画関数
 function render(field_index) {
-    console.log(field_index);
     field = fields[field_index]
 
     //テト譜描画
