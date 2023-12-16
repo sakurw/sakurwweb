@@ -6,77 +6,17 @@ const fumen_data_format = {
 }
 
 //譜面、連結開始番号   
-let input_fumen = [["v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHegwhGeRpwhGeRpwhhlh0DeAtwhAeglg0DeBtBe?glg0DeAtfeAgHWhywHewwMeAgHvhAAgHLhQ4IeR4IeQ4NeA?gH", 1], ["v115@egwhDeRpCewhDeRpCewhhlh0Q4Dexhglg0S4CeAtwh?glg0S4BeBtwhRpg0Q4CeAtglwhRpi0AeilJeAgHWhywHeww?MeAgHvhAAgHPhAtHeBtHeAtLeAgH", 2]];
+let input_fumen = [["v115@9gwhBeQ4EeAtwhBeR4CeBtwhRpg0Q4CeAtglwhRpi0?AeilJeAgHegwhGeRpwhGeRpwhhlh0DeAtwhAeglg0DeBtBe?glg0DeAtfeAgHWhywHewwMeAgHvhAAgHLhQ4IeR4IeQ4NeA?gH", 1], ["v115@egwhIewhIewhhlh0Q4Dexhglg0S4CeAtwhglg0S4Be?BtwhRpg0Q4CeAtglwhRpi0AeilJeAgHjgRpHeRpmeywHeww?MeAgHvhAAgHPhAtHeBtHeAtLeAgH", 2]];
 let input_edge = [[1, 5], [2], [3], [4], [], [6], [7], [8], []];
+input_stage = 2;
+input_queue = "TILJSO";
+input_queue = new RegExp("^" + input_queue + "*")
+
+let now_fumen_index = 0
 let fields = new Array();
 let page_div_num = new Array();
-
 input_fumen.forEach(function (fumen) {
-    //field初期化
-    let field = new Array();
-    for (field_index = 0; field_index <= 239; field_index++) {
-        field.push(0);
-    }
-    fumen_code = fumen[0].replace(/\?/g, "").substr(5);
-
-    let even_char_num = 0;
-    var minos = new Array();
-    var block_nums = new Array();
-    let block_count = 0;
-    let line_clear_frag = 0;
-    let clear_line = new Array();
-    for (char_index = 0; char_index < fumen_code.length; char_index++) {
-        if (char_index % 2 === 0) {
-            even_char_num = fumen_data_format[fumen_code.charAt(char_index)];
-        }
-        else {
-            poll = even_char_num + fumen_data_format[fumen_code.charAt(char_index)] * 64;
-            minos.push(Math.floor(poll / 240) - 8);
-            block_nums.push((poll % 240) + 1);
-            block_count += (poll % 240) + 1;
-        }
-        //ページ化(軽量化ポイント)
-        if (block_count === 240) {
-            let block_index = 0;
-            for (mino_index = 0; mino_index <= minos.length; mino_index++) {
-                for (block_num_index = 0; block_num_index <= block_nums[mino_index] - 1; block_num_index++) {
-                    field[block_index] += minos[mino_index];
-                    if (block_index % 10 === 9) {
-                        if (field[block_index] !== 0 & line_clear_frag === 9) {
-                            clear_line.push(Math.floor(block_index / 10) * 10);
-                        }
-                        line_clear_frag = 0;
-
-                    }
-                    else if (field[block_index] !== 0) {
-                        line_clear_frag++;
-                    }
-                    block_index++
-                }
-            }
-            fields.push(field.concat());
-            minos = [];
-            block_nums = [];
-            block_count = 0;
-            fumen_code = fumen_code.substr(char_index + 4,);
-            char_index = -1
-            //line消去処理（pushが完了しているのでfieldを置き換える）
-            clear_line.forEach(function (clear_row) {
-                //前のfieldに影響している?
-                field.splice(clear_row, 10);
-                field.unshift(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            });
-            clear_line = [];
-            //空ページ処理(64ページまで)
-            if (fumen_code.charAt(0) === "v" & fumen_code.charAt(1) === "h") {
-                for (none_page_index = 0; none_page_index <= fumen_data_format[fumen_code.charAt(2)]; none_page_index++) {
-                    fields.push(Array.from(field))
-                }
-                fumen_code = fumen_code.substr(((fumen_data_format[fumen_code.charAt(2)] + 1) * 3) + 3);
-            }
-
-        }
-    }
+    fumen_code_decode(fumen[0], fields);
     //次譜面の開始番号を記録
     page_div_num.push(fields.length);
 });
@@ -95,8 +35,6 @@ const field_graphic = new PIXI.Application({
 });
 document.getElementById("fumen_display").appendChild(field_graphic.view);
 
-let token_positions = new Array(fields.length - 1);
-
 //ネットグラフのステージ生成
 net_width = 900;
 net_height = 300;
@@ -108,7 +46,6 @@ const net_graphic = new PIXI.Application({
     resolution: 1,
     autoDensity: true
 });
-
 document.getElementById("net_display").appendChild(net_graphic.view);
 
 //token配置用の配列に変換
@@ -140,6 +77,7 @@ for (fumen_index = 0; fumen_index <= net_fields_index.length - 1; fumen_index++)
 
 }
 
+let token_positions = new Array(fields.length - 1);
 //token座標のみ取得
 token_x = 30;
 token_space = 100;
@@ -147,8 +85,8 @@ token_color = 0x1e308a;
 
 fumens.forEach(function (stage) {
     let put_row = 1;
-    stage.forEach(function (fumen_index_num) {
-        token_positions[fumen_index_num] = [token_x, (net_height * put_row) / (stage.length + 1)];
+    stage.forEach(function (stage_fumen_index) {
+        token_positions[stage_fumen_index] = [token_x, (net_height * put_row) / (stage.length + 1)];
         put_row++;
     });
     token_x += token_space;
@@ -192,42 +130,132 @@ fumens.forEach(function (stage) {
 let pre_token_position = token_positions[0];
 click_token(0);
 
-//csv
+//以下を関数化、探索ボタンで処理開始
+//filter処理
 let csv_paths = new Array(fumens.length);
 csv_paths[1] = "cover.csv"
-let csvs = new Array(fumens.length);
-//forでcsvループ→split/nで配列化→更に配列をループし[0]をkey、残りをsliceでvalueに
+let csvs = new Array();
 for (csv_path_index = 0; csv_path_index <= csv_paths.length - 1; csv_path_index++) {
     if (csv_paths[csv_path_index] === undefined) {
-        csvs[csv_path_index] = "";
+        csvs.push("");
         continue;
     }
-    let cover_dict = {};
+
+    let csv_split_row = new Array();
     const request = new XMLHttpRequest();
     request.addEventListener("load", (csv_file) => {
         csv_rows = csv_file.target.responseText.split("\n");
-        for (csv_cell_index = 0; csv_cell_index <= csv_rows.length - 2; csv_cell_index++) {
-            cover_dict[csv_rows[csv_cell_index].split(",")[0]] = csv_rows[csv_cell_index].split(",").slice(1);
-            delete_r = cover_dict[csv_rows[csv_cell_index].split(",")[0]].pop();
-            cover_dict[csv_rows[csv_cell_index].split(",")[0]].push(delete_r.slice(0, -1));
+        for (csv_row_index = 0; csv_row_index <= csv_rows.length - 2; csv_row_index++) {
+            csv_split_row.push(csv_rows[csv_row_index].split(","));
+            delete_r = csv_split_row[csv_row_index].pop();
+            csv_split_row[csv_row_index].push(delete_r.slice(0, -1));
         }
-        csvs[csv_path_index] = Object.create(cover_dict);
+        csvs.push(JSON.parse(JSON.stringify(csv_split_row)));
     });
-    request.open("GET", csv_paths[csv_path_index], true);
+    request.open("GET", csv_paths[csv_path_index], false);
     request.send();
+}
+//探索処理
+hit_fumens = new Array();
+for (judge_col_index = 1; judge_col_index <= csvs[input_stage - 1][0].length - 1; judge_col_index++) {
+    for (judge_row_index = 1; judge_row_index <= csvs[input_stage - 1].length - 1; judge_row_index++) {
+        if (input_queue.test(csvs[input_stage - 1][judge_row_index][0]) && csvs[input_stage - 1][judge_row_index][judge_row_index] === "O") {
+            hit_fumens.push(csvs[input_stage - 1][0][judge_col_index]);
+            break;
+        }
+    }
+}
+//hitしたtokenを配置処理
+//方法1でindex検索
+decoded_hit_fields = new Array();
+for (hit_fumen_index = 0; hit_fumen_index <= hit_fumens.length - 1; hit_fumen_index++) {
+    fumen_code_decode(hit_fumens[hit_fumen_index], decoded_hit_fields)
+
+    for (compaire_index = 0; compaire_index <= 239; compaire_index++) {
+
+    }
+    const token_graphic = new PIXI.Graphics();
+    net_graphic.stage.addChild(token_graphic);
 }
 
 
 
+//譜面コーのデコード関数、パラメータは渡す譜面コードとデコードしたフィールドの格納先
+function fumen_code_decode(fumen_code, field_container) {
+    let field = new Array();
+    for (field_index = 0; field_index <= 239; field_index++) {
+        field.push(0);
+    }
+    fumen_code = fumen_code.replace(/\?/g, "").substr(5);
+
+    let even_char_num = 0;
+    var minos = new Array();
+    var block_nums = new Array();
+    let block_count = 0;
+    let line_clear_frag = 0;
+    let clear_line = new Array();
+    for (char_index = 0; char_index < fumen_code.length; char_index++) {
+        if (char_index % 2 === 0) {
+            even_char_num = fumen_data_format[fumen_code.charAt(char_index)];
+        }
+        else {
+            poll = even_char_num + fumen_data_format[fumen_code.charAt(char_index)] * 64;
+            minos.push(Math.floor(poll / 240) - 8);
+            block_nums.push((poll % 240) + 1);
+            block_count += (poll % 240) + 1;
+        }
+        //ページ化(軽量化ポイント)
+        if (block_count === 240) {
+            let block_index = 0;
+            for (mino_index = 0; mino_index <= minos.length; mino_index++) {
+                for (block_num_index = 0; block_num_index <= block_nums[mino_index] - 1; block_num_index++) {
+                    field[block_index] += minos[mino_index];
+                    if (block_index % 10 === 9) {
+                        if (field[block_index] !== 0 & line_clear_frag === 9) {
+                            clear_line.push(Math.floor(block_index / 10) * 10);
+                        }
+                        line_clear_frag = 0;
+
+                    }
+                    else if (field[block_index] !== 0) {
+                        line_clear_frag++;
+                    }
+                    block_index++
+                }
+            }
+            field_container.push(field.concat());
+            minos = [];
+            block_nums = [];
+            block_count = 0;
+            fumen_code = fumen_code.substr(char_index + 4,);
+            char_index = -1
+            //line消去処理（pushが完了しているのでfieldを置き換える）
+            clear_line.forEach(function (clear_row) {
+                field.splice(clear_row, 10);
+                field.unshift(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            });
+            clear_line = [];
+            //空ページ処理(64ページまで)
+            if (fumen_code.charAt(0) === "v" & fumen_code.charAt(1) === "h") {
+                for (none_page_index = 0; none_page_index <= fumen_data_format[fumen_code.charAt(2)]; none_page_index++) {
+                    field_container.push(Array.from(field))
+                }
+                fumen_code = fumen_code.substr(((fumen_data_format[fumen_code.charAt(2)] + 1) * 3) + 3);
+            }
+
+        }
+    }
+}
+
 //tokenクリック関数
 function click_token(fumen_index_num) {
+    now_fumen_index = fumen_index_num;
     const token_graphic = new PIXI.Graphics();
     token_graphic.lineStyle(1, 0x000000, 1, 1);
     token_graphic.beginFill(token_color);
     token_graphic.drawCircle(pre_token_position[0], pre_token_position[1], net_height / 15);
     token_graphic.lineStyle();
     token_graphic.lineStyle(1, 0xFF0000, 1, 1);
-    token_graphic.beginFill(token_color);
     token_graphic.drawCircle(token_positions[fumen_index_num][0], token_positions[fumen_index_num][1], net_height / 15);
     token_graphic.endFill();
     token_graphic.lineStyle();
